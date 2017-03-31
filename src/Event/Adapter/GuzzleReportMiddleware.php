@@ -37,7 +37,7 @@ class GuzzleReportMiddleware
         $method  = $message->getMethod();
         $uri     = $message->getUri();
         $headers = static::formatHeaders($message->getHeaders());
-        $body    = strval($message->getBody());
+        $body    = $message->getBody()->getContents();
         
         $message->getBody()->rewind();
 

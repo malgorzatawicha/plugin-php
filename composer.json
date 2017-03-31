@@ -18,7 +18,8 @@
     "tonicforhealth/behat-parallel-scenario": "1.0.7",
     "brianium/paratest": "0.14.0",
     "squizlabs/php_codesniffer": "2.0.0",
-    "peekmo/jsonpath": "1.1.0"
+    "peekmo/jsonpath": "1.1.0",
+    "facile-it/paraunit": "^0.8.2"
   },
   "autoload": {
     "psr-4": {
