@@ -64,7 +64,7 @@ EOF;
         $version  = $response->getProtocolVersion();
         $status   = $response->getStatusCode();
         $headers  = static::formatHeaders($response->getHeaders());
-        $body     = $response->getBody()->getContents();
+        $body     = strval($response->getBody());
         $response->getBody()->rewind();
 
         return <<<EOF

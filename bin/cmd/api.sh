@@ -9,11 +9,15 @@ if ! athena.argument.argument_exists "--bootstrap"; then
 	athena.argument.append_to_arguments "--bootstrap=$WORKDIR/bootstrap.php"
 fi
 
+pipe_path="$(mktemp)"
+
 export ATHENA_TESTS_TYPE="api"
 export ATHENA_CONFIGURATION_FILE="$config_file_path"
 export ATHENA_TESTS_DIRECTORY="."
+export ATHENA_REPORT_PIPE_NAME="$pipe_path"
 arguments=()
 athena.argument.get_arguments arguments
+
 
 pushd "$tests_dir" 1>/dev/null
 
@@ -24,6 +28,9 @@ else
 fi
 
 phpunit_exit_code=$?
+
+athena.plugins.php._aggregate_pipe_output "$pipe_path"
+
 popd 1>/dev/null
 
 if [[ $phpunit_exit_code -ne 0 ]]; then
