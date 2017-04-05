@@ -24,7 +24,7 @@ pushd "$tests_dir" 1>/dev/null
 if [[ ! -f ./phpunit.xml ]]; then
 	$PHPUNIT_CMD "${arguments[@]}" .
 else
-	$PHPUNIT_CMD "${arguments[@]}" .
+	$PHPUNIT_CMD "${arguments[@]}"
 fi
 
 phpunit_exit_code=$?
