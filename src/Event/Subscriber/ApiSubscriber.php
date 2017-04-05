@@ -85,6 +85,16 @@ class ApiSubscriber implements EventSubscriberInterface
         $this->report->addHttpTransaction($event->getRequest(), $event->getResponse());
     }
 
+    /**
+     * @param \Athena\Logger\TrafficLoggerInterface $trafficLogger
+     *
+     * @return $this
+     */
+    public function setTrafficLogger(TrafficLoggerInterface $trafficLogger)
+    {
+        $this->trafficLogger = $trafficLogger;
+        return $this;
+    }
 
     /**
      * @inheritDoc

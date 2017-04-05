@@ -3,22 +3,24 @@ namespace Athena\Event\Subscriber\Builder;
 
 use Athena\Athena;
 use Athena\Event\Subscriber\ApiSubscriber;
-use Athena\Logger\Interpreter\HtmlInterpreter;
+use Athena\Logger\Interpreter\DelimitedJsonInterpreter;
 use Athena\Logger\ProxyTrafficLogger;
-use Athena\Stream\FileOutputStream;
+use Athena\Logger\Timer\MicroTimer;
+use Athena\Stream\NamedPipeOutputStream;
 use Athena\Stream\UniqueNameFileOutputStream;
 
 class ApiSubscriberBuilder extends AbstractSubscriberBuilder
 {
     /**
-     * @return \Athena\Event\Subscriber\UnitSubscriber
+     * @return \Athena\Event\Subscriber\ApiSubscriber
      */
     public function build()
     {
-        $interpreter  = new HtmlInterpreter('unit_report.twig');
-        $outputStream = new FileOutputStream($this->outputPathName . "/report.html");
+        $interpreter  = new DelimitedJsonInterpreter(DelimitedJsonInterpreter::NEW_LINE);
+        $outputStream = new NamedPipeOutputStream(ATHENA_REPORT_PIPE_NAME);
+        $timer        = new MicroTimer();
 
-        $subscriber = new ApiSubscriber($interpreter, $outputStream);
+        $subscriber = new ApiSubscriber($interpreter, $outputStream, $timer);
 
         if ($this->withTrafficLogger) {
             $subscriber->setTrafficLogger(
