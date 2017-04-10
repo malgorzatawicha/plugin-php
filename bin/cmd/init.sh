@@ -10,7 +10,7 @@ else
 fi
 
 athena.color.print_info "Running composer ${operation}..."
-if ! composer $operation --prefer-dist --no-interaction -o; then
+if ! composer $operation --prefer-dist --no-interaction --ignore-platform-reqs -o; then
 	popd 1>/dev/null
 	athena.fatal "Composer failed to complete $operation operation..."
 fi
