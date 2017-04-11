@@ -13,22 +13,79 @@
     </style>
 </head>
 <body>
+
 {% for suite in report %}
     {% import _self as rep %}
-    <div class="container">
-        <header class="page-header">
-            {% if suite.type == "child_suite" %}
-                {{ rep.parse_child_suite(suite) }}
-            {% endif %}
 
-            {% if suite.type == "suite" %}
-                {{ rep.parse_test(suite) }}
-            {% endif %}
-        </header>
-    </div>
+<div class="container">
+    <header class="page-header">
+
+        <h1>{{ suite.title }}</h1>
+
+        {% if suite.total_tests > 0 %}
+            <small>
+                Ran a total of {{ suite.total_tests }} tests.
+            </small>
+        {% endif %}
+
+        <p>
+            <small>
+                {% if suite.total_passed > 0 %}
+                    <a href="javascript:void(0)"
+                       data-show-msg="Show Passed Tests ({{ suite.total_passed }})"
+                       data-hide-msg="Hide Passed Tests ({{ suite.total_passed }})"
+                       data-target="section.passed-feature, section.passed-test "
+                       class="btn btn-success feature-toggle"
+                    >
+                        Show Passed Tests ({{ suite.total_passed }})
+                    </a>
+                {% endif %}
+
+                {% if suite.total_failures > 0 %}
+                    <a href="javascript:void(0)"
+                       data-show-msg="Show Failed Tests ({{ suite.total_failures }})"
+                       data-hide-msg="Hide Failed Tests ({{ suite.total_failures }})"
+                       data-target="section.failed-feature, section.failed-test"
+                       class="btn btn-danger feature-toggle"
+                    >
+                        Hide Failed Tests ({{ suite.total_failures }})
+                    </a>
+                {% endif %}
+            </small>
+        </p>
+    </header>
+
+    {% if not suite.successful %}
+        <div class="progress">
+            <div class="progress-bar progress-bar-success" style="width: {{ suite.success_percentage }}%">
+                <span class="sr-only">{{ suite.total_passed }}</span>
+            </div>
+            <div class="progress-bar progress-bar-danger" style="width: {{ suite.failure_percentage }}%">
+                <span class="sr-only">{{ suite.total_failures }}</span>
+            </div>
+        </div>
+    {% endif %}
+
+    {{ rep.parse_suite(suite) }}
+</div>
 {% endfor %}
+
+
 </body>
 </html>
+
+{% macro parse_suite(suite) %}
+    {% for test in suite.children %}
+        {% import _self as rep %}
+                {% if test.type == "child_suite" %}
+                    {{ rep.parse_child_suite(test) }}
+                {% endif %}
+
+                {% if test.type == "test" %}
+                    {{ rep.parse_test(test) }}
+                {% endif %}
+    {% endfor %}
+{%  endmacro parse_suite %}
 
 {# Child test suites are shown as sections #}
 {% macro parse_child_suite(suite) %}

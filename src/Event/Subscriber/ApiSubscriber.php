@@ -78,6 +78,8 @@ class ApiSubscriber implements EventSubscriberInterface
     {
         $unitEvents = [
             UnitSuiteCompleted::BEFORE => ['startTestSuite', -50],
+            UnitTestCompleted::BEFORE => ['startTest', -50],
+            UnitTestCompleted::AFTER => ['endTest', -50],
             UnitTestIncomplete::ERROR => ['addError', -50],
             UnitTestIncomplete::FAILURE => ['addFailure', -50],
             UnitTestIncomplete::SKIPPED => ['addSkipped', -50],
