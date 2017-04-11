@@ -13,78 +13,22 @@
     </style>
 </head>
 <body>
-<pre>{{ dump() }}</pre>
-{% for suite in report.children %}
-    {{ _self.parse_suite(suite) }}
+{% for suite in report %}
+    {% import _self as rep %}
+    <div class="container">
+        <header class="page-header">
+            {% if suite.type == "child_suite" %}
+                {{ rep.parse_child_suite(suite) }}
+            {% endif %}
+
+            {% if suite.type == "suite" %}
+                {{ rep.parse_test(suite) }}
+            {% endif %}
+        </header>
+    </div>
 {% endfor %}
 </body>
 </html>
-
-{# Parse Testing Suite Results #}
-{% macro parse_suite(suite) %}
-
-    <div class="container">
-        <header class="page-header">
-
-            <h1>{{ suite.title }}</h1>
-
-            {% if suite.total_tests > 0 %}
-            <small>
-                Ran a total of {{ suite.total_tests }} tests.
-            </small>
-            {% endif %}
-
-            <p>
-                <small>
-                    {% if suite.total_passed > 0 %}
-                        <a href="javascript:void(0)"
-                           data-show-msg="Show Passed Tests ({{ suite.total_passed }})"
-                           data-hide-msg="Hide Passed Tests ({{ suite.total_passed }})"
-                           data-target="section.passed-feature, section.passed-test "
-                           class="btn btn-success feature-toggle"
-                        >
-                            Show Passed Tests ({{ suite.total_passed }})
-                        </a>
-                    {% endif %}
-
-                    {% if suite.total_failures > 0 %}
-                        <a href="javascript:void(0)"
-                           data-show-msg="Show Failed Tests ({{ suite.total_failures }})"
-                           data-hide-msg="Hide Failed Tests ({{ suite.total_failures }})"
-                           data-target="section.failed-feature, section.failed-test"
-                           class="btn btn-danger feature-toggle"
-                        >
-                            Hide Failed Tests ({{ suite.total_failures }})
-                        </a>
-                    {% endif %}
-                </small>
-            </p>
-        </header>
-
-        {% if not suite.successful %}
-            <div class="progress">
-                <div class="progress-bar progress-bar-success" style="width: {{ suite.success_percentage }}%">
-                    <span class="sr-only">{{ suite.total_passed }}</span>
-                </div>
-                <div class="progress-bar progress-bar-danger" style="width: {{ suite.failure_percentage }}%">
-                    <span class="sr-only">{{ suite.total_failures }}</span>
-                </div>
-            </div>
-        {% endif %}
-
-        {% for child in suite.children %}
-
-            {% if child.type == "child_suite" %}
-                {{ _self.parse_child_suite(child) }}
-            {% endif %}
-
-            {% if child.type == "test" %}
-                {{ _self.parse_test(child) }}
-            {% endif %}
-
-        {% endfor %}
-    </div>
-{% endmacro %}
 
 {# Child test suites are shown as sections #}
 {% macro parse_child_suite(suite) %}
@@ -99,15 +43,23 @@
         <div class="panel-heading feature-heading">{{ suite.title }}</div>
         <div class="panel-body" style="display: none">
             {% for child in suite.children %}
-                {{ _self.parse_test(child) }}
+                {% import _self as rep %}
+                {{ rep.parse_test(child) }}
             {% endfor %}
         </div>
     </section>
-{% endmacro %}
+{% endmacro parse_child_suite %}
 
 {# Parse tests as sections and their exceptions as list items #}
 {% macro parse_test(test) %}
-    <section class="accordion-test panel panel-default {% if test.successful %}passed-test{% else %}failed-test panel-danger{% endif %} test-execution" {% if test.successful %}style="display:none"{% endif %}>
+    <section
+            class="accordion-test panel panel-default
+                {% if test.successful %}
+                       passed-test
+                {% else %}
+                        failed-test panel-danger
+                {% endif %}
+                test-execution" >
         <div class="panel-heading test-heading">{{ test.title }}</div>
         <div class="panel-body" style="display: none">
             {% if test.children is not empty %}
@@ -115,7 +67,8 @@
                     {% for event in test.children %}
                         {% if event.type == "failure" %}
                             Failure
-                            <li class="{{ _self.parse_message_class(event.type) }}" title="{{ event.type }}">
+                            {% import _self as rep %}
+                            <li class="{{ rep.parse_message_class(event.type) }}" title="{{ event.type }}">
                                 <pre>{{ "#{event.exception_type}\n\n#{event.exception_msg}" }}</pre>
                                 <pre>{{ event.exception_trace }}</pre>
                             </li>
@@ -140,7 +93,7 @@
             {% endif %}
         </div>
     </section>
-{% endmacro %}
+{% endmacro parse_test %}
 
 {# Find out the correct class for the current step status #}
 {% macro parse_message_class(type) %}
@@ -153,7 +106,7 @@
         list-group-item-danger
     {% endif %}
 {% endspaceless %}
-{% endmacro %}
+{% endmacro parse_message_class %}
 
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
