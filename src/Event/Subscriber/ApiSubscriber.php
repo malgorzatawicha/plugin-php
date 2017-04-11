@@ -3,6 +3,9 @@ namespace Athena\Event\Subscriber;
 
 use Athena\Event\HttpTransactionCompleted;
 use Athena\Event\Proxy\BehatProxy;
+use Athena\Event\UnitSuiteCompleted;
+use Athena\Event\UnitTestCompleted;
+use Athena\Event\UnitTestIncomplete;
 use Athena\Logger\Builder\BddReportBuilder;
 use Athena\Logger\Builder\UnitReportBuilder;
 use Athena\Logger\Interpreter\InterpreterInterface;
@@ -48,6 +51,8 @@ class ApiSubscriber implements EventSubscriberInterface
      */
     private $afterHttpTransactionEvents = [];
 
+    private $suiteStartedCount;
+
     /**
      * BddSubscriber constructor.
      *
@@ -71,18 +76,34 @@ class ApiSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        $events = BehatProxy::getSubscribedEvents();
-        $events[HttpTransactionCompleted::AFTER] = 'afterComplete';
-
-        return $events;
+        return [
+            UnitSuiteCompleted::BEFORE => ['startTestSuite', -50],
+            UnitTestIncomplete::ERROR => ['addError', -50],
+            UnitTestIncomplete::FAILURE => ['addFailure', -50],
+            UnitTestIncomplete::SKIPPED => ['addSkipped', -50],
+            UnitTestIncomplete::WARNING => ['addWarning', -50],
+            UnitTestIncomplete::INCOMPLETE => ['addIncomplete', -50],
+            UnitTestIncomplete::RISKY => ['addRisky', -50],
+            UnitSuiteCompleted::AFTER => ['endTestSuite', -50]
+        ];
     }
 
     /**
-     * @param \Athena\Event\HttpTransactionCompleted $event
+     * @param \Athena\Event\UnitSuiteCompleted $event
      */
-    public function afterComplete(HttpTransactionCompleted $event)
+    public function startTestSuite(UnitSuiteCompleted $event)
     {
-        $this->report->addHttpTransaction($event->getRequest(), $event->getResponse());
+        // Dodge PHP Unit strange behaviour with multiple testing suites
+        if ($event->getTestSuite()->getName() == null) {
+            return;
+        }
+
+        if ($this->suiteStartedCount++ > 0) {
+            $this->report->startChildTestSuite($event->getTestSuite()->getName());
+            return;
+        }
+
+        $this->report->startTestSuite($event->getTestSuite()->getName());
     }
 
     /**
@@ -94,6 +115,100 @@ class ApiSubscriber implements EventSubscriberInterface
     {
         $this->trafficLogger = $trafficLogger;
         return $this;
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestCompleted $event
+     */
+    public function startTest(UnitTestCompleted $event)
+    {
+        if ($this->trafficLogger instanceof TrafficLoggerInterface) {
+            $this->trafficLogger->start();
+        }
+
+        $this->report->startTest($event->getTest()->getName());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addError(UnitTestIncomplete $event)
+    {
+        $this->report->addError(get_class($event->getException()), $event->getException()->getMessage(), $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addFailure(UnitTestIncomplete $event)
+    {
+        $msg = $event->getException()->getMessage();
+        $exception = $event->getException();
+        if (method_exists($exception, 'getComparisonFailure') && !empty($event->getException()->getComparisonFailure())) {
+            $msg = $event->getException()->getComparisonFailure()->toString();
+        }
+
+        $this->report->addFailure(get_class($event->getException()), $msg, $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addRisky(UnitTestIncomplete $event)
+    {
+        $this->report->addRisky(get_class($event->getException()), $event->getException()->getMessage(), $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addSkipped(UnitTestIncomplete $event)
+    {
+        $this->report->addSkipped(get_class($event->getException()), $event->getException()->getMessage(), $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addWarning(UnitTestIncomplete $event)
+    {
+        $this->report->addWarning(get_class($event->getException()), $event->getException()->getMessage(), $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestIncomplete $event
+     */
+    public function addIncomplete(UnitTestIncomplete $event)
+    {
+        $this->report->addIncomplete(get_class($event->getException()), $event->getException()->getMessage(), $event->getException()->getTraceAsString());
+    }
+
+    /**
+     * @param \Athena\Event\UnitTestCompleted $event
+     */
+    public function endTest(UnitTestCompleted $event)
+    {
+        $trafficLoggerFile = null;
+        if ($this->trafficLogger instanceof TrafficLoggerInterface ) {
+            $trafficLoggerFile = $this->trafficLogger->write();
+        }
+
+        $this->report->endTest($event->getExecutionTime(), $trafficLoggerFile);
+    }
+
+    /**
+     * @param \Athena\Event\UnitSuiteCompleted $event
+     */
+    public function endTestSuite(UnitSuiteCompleted $event)
+    {
+        // Dodge PHP Unit strange behaviour with multiple testing suites
+        if ($event->getTestSuite()->getName() == null) {
+            return;
+        }
+
+        $this->report->endTestSuite();
+
+        $this->suiteStartedCount--;
     }
 
     /**

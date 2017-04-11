@@ -23,7 +23,8 @@ class HtmlInterpreter implements InterpreterInterface
     public function __construct($templateFileName)
     {
         $twigLoader = new Twig_Loader_Filesystem(__DIR__ . '/../Template');
-        $this->twig = new Twig_Environment($twigLoader);
+        $this->twig = new Twig_Environment($twigLoader, ['debug' => true]);
+        $this->twig->addExtension(new \Twig_Extension_Debug());
 
         $this->templateFileName = $templateFileName;
     }

@@ -13,6 +13,7 @@
     </style>
 </head>
 <body>
+<pre>{{ dump() }}</pre>
 {% for suite in report.children %}
     {{ _self.parse_suite(suite) }}
 {% endfor %}

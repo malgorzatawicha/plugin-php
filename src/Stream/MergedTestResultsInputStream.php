@@ -39,9 +39,9 @@ class MergedTestResultsInputStream implements InputStreamInterface
     public function read()
     {
         $mergedBuffer = [];
-
         while ($this->inputStream->valid()) {
             $buffer = $this->inputStream->read();
+            $buffer = $this->normaliseBuffer($buffer);
 
             // we only want to parse suites
             if (empty($buffer) || $buffer['type'] != 'suite') {
@@ -110,6 +110,14 @@ class MergedTestResultsInputStream implements InputStreamInterface
             return $haystack[$key];
         }
         return $default;
+    }
+
+    private function normaliseBuffer($buffer)
+    {
+        if (is_array($buffer) && array_key_exists('children', $buffer)) {
+            return $buffer['children'][0];
+        }
+        return $buffer;
     }
 }
 
