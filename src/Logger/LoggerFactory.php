@@ -23,10 +23,13 @@ class LoggerFactory
             $reportName = $settings->getByPath('report.name')->orDefaultTo('report');
             $totalExecTime   = $settings->getByPath('athena_tests_exec_timer')->orFail();
 
+
             return (new LoggerBuilder())
                 ->readWith(new MergedTestResultsInputStream(new JsonInputStream(new StdinInputStream()), $totalExecTime))
                 ->parseWith(InterpreterFactory::fromSettings($settings))
-                ->printWith(new FileOutputStream(sprintf("%s/$reportName.$format", $outputDirectory)))->build();
+                ->printWith(new FileOutputStream(
+                    sprintf("%s/$reportName%s.$format", $outputDirectory, microtime(true)))
+                )->build();
         }
 
         return new NoLogLogger();
