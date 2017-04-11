@@ -76,7 +76,7 @@ class ApiSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        return [
+        $unitEvents = [
             UnitSuiteCompleted::BEFORE => ['startTestSuite', -50],
             UnitTestIncomplete::ERROR => ['addError', -50],
             UnitTestIncomplete::FAILURE => ['addFailure', -50],
@@ -86,6 +86,11 @@ class ApiSubscriber implements EventSubscriberInterface
             UnitTestIncomplete::RISKY => ['addRisky', -50],
             UnitSuiteCompleted::AFTER => ['endTestSuite', -50]
         ];
+
+        $events = BehatProxy::getSubscribedEvents();
+        //$events[HttpTransactionCompleted::AFTER] = 'afterHttpTransaction';
+
+        return array_merge($unitEvents, $events);
     }
 
     /**

@@ -62,6 +62,7 @@
                 test-execution" >
         <div class="panel-heading test-heading">{{ test.title }}</div>
         <div class="panel-body" style="display: none">
+            <pre> {{ dump(test) }}</pre>
             {% if test.children is not empty %}
                 <ul class="list-group">
                     {% for event in test.children %}
