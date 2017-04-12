@@ -13,7 +13,6 @@
     </style>
 </head>
 <body>
-
 {% for suite in report %}
     {% import _self as rep %}
 
@@ -141,10 +140,24 @@
                         {% endif %}
                     {% endfor %}
 
-                    {% if test.traffic_logger_file %}
+                    {% if test.traffic_logger_content %}
                         <li class="test-execution-item list-group-item">
-                            <a href="{{ test.traffic_logger_file }}" target="_blank">Download Har File</a>
+                            <a class="btn btn-primary" href="{{ test.traffic_logger_file }}" target="_blank">
+                                Download HAR
+                            </a>
+                            <button class="btn btn-primary showhar">Show HAR</button>
                         </li>
+                        <li class="test-execution-item list-group-item hidden harContent">
+                            {{ test.traffic_logger_content }}
+                        </li>
+                    {% else %}
+                        {% if test.traffic_logger_file %}
+                            <li class="test-execution-item list-group-item">
+                                <a href="{{ test.traffic_logger_file }}" target="_blank">
+                                    Download HAR
+                                </a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
             {% endif %}
@@ -168,10 +181,29 @@
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+<script src="http://logo.olx.pl/images_pmaciejewski/mustache.js"></script>
+<script src="http://logo.olx.pl/images_pmaciejewski/har-viewer.js"></script>
+<link rel='stylesheet' href='http://logo.olx.pl/images_pmaciejewski/har-viewer.css'/>
+<link rel='stylesheet' href='https://code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css'/>
 
 <script>
     $(function () {
-
+        $(".showhar").on("click", function() {
+            var $this = $(this);
+            var $modalArea = $("#modal-body");
+            var dataContent = $this.parent().siblings('.harContent').html();
+            var data = JSON.parse(dataContent);
+            $modalArea.html(
+                '<div class="overlay-contents" style="height: 300px; overflow: auto; margin-bottom: 15px;">' +
+                '<div class="harContentRender"></div>' +
+                '</div>'
+            );
+            var modal = $("#modal");
+            modal.modal();
+            var content = modal.find('.harContentRender').HarView();
+            var har = content.data('HarView');
+            har.render(data);
+        });
         $(".show-expected-exception").on("click", function (e) {
             $(this).siblings(".expected-exception-stacktrace").show();
             $(this).hide();

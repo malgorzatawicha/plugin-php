@@ -267,7 +267,13 @@ class UnitReportBuilder
 
         if ($trafficLoggerFile) {
             $this->pointer
-                ->withAttribute('traffic_logger_file', './'.basename($trafficLoggerFile));
+                ->withAttribute(
+                    'traffic_logger_file',
+                    './'.basename($trafficLoggerFile))
+                ->withAttribute(
+                    'traffic_logger_content',
+                    file_get_contents('./Report/'.basename($trafficLoggerFile))
+            );
         }
 
         if ($httpTransactionSteps) {
