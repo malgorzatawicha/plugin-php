@@ -42,11 +42,6 @@ class ApiSubscriber implements EventSubscriberInterface
     private $timer;
 
     /**
-     * @var string
-     */
-    private $currentOutlineTitle;
-
-    /**
      * @var HttpTransactionCompleted[]
      */
     private $afterHttpTransactionEvents = [];
@@ -76,7 +71,7 @@ class ApiSubscriber implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
-        $unitEvents = [
+        return [
             UnitSuiteCompleted::BEFORE => ['startTestSuite', -50],
             UnitTestCompleted::BEFORE => ['startTest', -50],
             UnitTestCompleted::AFTER => ['endTest', -50],
@@ -86,13 +81,9 @@ class ApiSubscriber implements EventSubscriberInterface
             UnitTestIncomplete::WARNING => ['addWarning', -50],
             UnitTestIncomplete::INCOMPLETE => ['addIncomplete', -50],
             UnitTestIncomplete::RISKY => ['addRisky', -50],
-            UnitSuiteCompleted::AFTER => ['endTestSuite', -50]
+            UnitSuiteCompleted::AFTER => ['endTestSuite', -50],
+            HttpTransactionCompleted::AFTER => ['addHttpTransaction', -50]
         ];
-
-        $events = BehatProxy::getSubscribedEvents();
-        //$events[HttpTransactionCompleted::AFTER] = 'afterHttpTransaction';
-
-        return array_merge($unitEvents, $events);
     }
 
     /**
@@ -200,7 +191,16 @@ class ApiSubscriber implements EventSubscriberInterface
             $trafficLoggerFile = $this->trafficLogger->write();
         }
 
-        $this->report->endTest($event->getExecutionTime(), $trafficLoggerFile);
+        $httpTransactions = $this->getHttpTransactionEvents();
+        $this->report->endTest($event->getExecutionTime(), $trafficLoggerFile, $httpTransactions);
+    }
+
+    /**
+     * @param \Athena\Event\HttpTransactionCompleted $event
+     */
+    public function addHttpTransaction(HttpTransactionCompleted $event)
+    {
+        $this->afterHttpTransactionEvents[] = $event;
     }
 
     /**
@@ -216,6 +216,25 @@ class ApiSubscriber implements EventSubscriberInterface
         $this->report->endTestSuite();
 
         $this->suiteStartedCount--;
+    }
+
+    private function getHttpTransactionEvents()
+    {
+        $httpTransactions = [];
+        if (!empty($this->afterHttpTransactionEvents)) {
+            do {
+                $httpRequestEvent = array_shift($this->afterHttpTransactionEvents);
+
+                $transaction['request_method'] = $httpRequestEvent->getRequestMethod();
+                $transaction['request_url'] = $httpRequestEvent->getRequestUrl();
+                $transaction['request'] = utf8_encode((string) $httpRequestEvent->getRequest());
+                $transaction['response'] = utf8_encode((string) $httpRequestEvent->getResponse());
+
+                $httpTransactions[] = $transaction;
+            } while (!empty($this->afterHttpTransactionEvents));
+        }
+
+        return $httpTransactions;
     }
 
     /**

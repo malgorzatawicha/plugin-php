@@ -119,7 +119,6 @@
                 test-execution" >
         <div class="panel-heading test-heading">{{ test.title }}</div>
         <div class="panel-body" style="display: none">
-            <pre> {{ dump(test) }}</pre>
             {% if test.children is not empty %}
                 <ul class="list-group">
                     {% for event in test.children %}
@@ -130,7 +129,7 @@
                                 <pre>{{ "#{event.exception_type}\n\n#{event.exception_msg}" }}</pre>
                                 <pre>{{ event.exception_trace }}</pre>
                             </li>
-                        {% elseif event.type == "transaction" %}
+                        {% elseif event.type == "http_transaction" %}
                             {% if loop.first %}
                                 Performed HTTP transactions
                             {% endif %}

@@ -250,7 +250,7 @@ class UnitReportBuilder
      * @param int  $executionTime
      * @param null $trafficLoggerFile
      */
-    public function endTest($executionTime, $trafficLoggerFile = null)
+    public function endTest($executionTime, $trafficLoggerFile = null, $httpTransactionSteps)
     {
         if ($this->wasTestSuccessful) {
             $this->statistics['total_passed']++;
@@ -268,6 +268,17 @@ class UnitReportBuilder
         if ($trafficLoggerFile) {
             $this->pointer
                 ->withAttribute('traffic_logger_file', './'.basename($trafficLoggerFile));
+        }
+
+        if ($httpTransactionSteps) {
+            foreach($httpTransactionSteps as $httpTransaction) {
+                $this->finishHttpTransaction(
+                    $httpTransaction['request_method'],
+                    $httpTransaction['request_url'],
+                    $httpTransaction['request'],
+                    $httpTransaction['response']
+                );
+            }
         }
 
         $this->pointer = $this->pointer->end();
@@ -292,6 +303,25 @@ class UnitReportBuilder
                 ->withAttribute('success_percentage', $successPercent)
                 ->withAttribute('failure_percentage', $failurePercent)
                 ->withAttribute('successful', $this->wasSuiteSuccessful)
+            ->end();
+    }
+
+    /**
+     * @param string $requestMethod
+     * @param string $requestUrl
+     * @param string $request
+     * @param string $response
+     */
+    public function finishHttpTransaction($requestMethod, $requestUrl, $request, $response)
+    {
+        $this->pointer = $this->pointer
+            ->withChildren()
+            ->newNode()
+            ->withAttribute('type', 'http_transaction')
+            ->withAttribute('request_method', $requestMethod)
+            ->withAttribute('request_url', $requestUrl)
+            ->withAttribute('request', $request)
+            ->withAttribute('response', $response)
             ->end();
     }
 
