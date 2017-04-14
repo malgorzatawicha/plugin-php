@@ -3,24 +3,63 @@
 <head>
     <title>Test Automation Report</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remodal/1.1.1/remodal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remodal/1.1.1/remodal-default-theme.css">
     <style type="text/css">
         pre {
             word-break: keep-all !important;
             word-wrap: normal !important;
             overflow-x: scroll !important;
         }
+        #cd-timeline {
+            position: relative;
+            padding: 2em 0;
+            margin-top: 2em;
+            margin-bottom: 2em;
+        }
+        #cd-timeline::before {
+            /* this is the vertical line */
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 18px;
+            height: 100%;
+            width: 4px;
+            background: #d7e4ed;
+        }
+        .cssanimations .cd-timeline-img.is-hidden {
+            visibility: hidden;
+        }
+        .cssanimations .cd-timeline-img.bounce-in {
+            visibility: visible;
+            animation: cd-bounce-1 0.6s;
+        }
+
+        @keyframes cd-bounce-1 {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            60% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 <body>
+<pre>{{  dump() }}</pre>
+<pre></pre>
 {% for suite in report %}
     {% import _self as rep %}
 
-<div class="container">
+<div class="container remodal-bg">
     <header class="page-header">
-
-        <h1>{{ suite.title }}</h1>
-
         {% if suite.total_tests > 0 %}
             <small>
                 Ran a total of {{ suite.total_tests }} tests.
@@ -74,52 +113,46 @@
 </html>
 
 {% macro parse_suite(suite) %}
+<div class="panel panel-default">
+    <div class="panel-heading">{{ suite.title }}</div>
+    <div class="panel-body" style="display: none">sth</div>
+    <ul class="list-group">
     {% for test in suite.children %}
-        {% import _self as rep %}
-                {% if test.type == "child_suite" %}
-                    {{ rep.parse_child_suite(test) }}
-                {% endif %}
+            {% import _self as rep %}
+            {% if test.type == "child_suite" %}
+                {{ rep.parse_child_suite(test) }}
+            {% endif %}
 
-                {% if test.type == "test" %}
-                    {{ rep.parse_test(test) }}
-                {% endif %}
+            {% if test.type == "test" %}
+                {{ rep.parse_test(test, loop.index) }}
+            {% endif %}
+
     {% endfor %}
+    </ul>
+</div>
 {%  endmacro parse_suite %}
 
 {# Child test suites are shown as sections #}
 {% macro parse_child_suite(suite) %}
-    {% set testPassed = true %}
-    {% for child in suite.children %}
-        {% if not child.successful %}
-            {% set testPassed = false %}
-        {% endif %}
-    {% endfor %}
-
-    <section class="accordion-feature panel panel-default {% if testPassed %}passed-feature{% else %}failed-feature panel-danger{% endif %}" {% if testPassed %}style="display:none"{% endif %}>
-        <div class="panel-heading feature-heading">{{ suite.title }}</div>
-        <div class="panel-body" style="display: none">
             {% for child in suite.children %}
                 {% import _self as rep %}
-                {{ rep.parse_test(child) }}
+                {% set number = loop.index*1000 %} }}
+                {{ rep.parse_test(child, number) }}
             {% endfor %}
-        </div>
-    </section>
+
 {% endmacro parse_child_suite %}
 
 {# Parse tests as sections and their exceptions as list items #}
-{% macro parse_test(test) %}
-    <section
-            class="accordion-test panel panel-default
-                {% if test.successful %}
-                       passed-test
-                {% else %}
-                        failed-test panel-danger
-                {% endif %}
-                test-execution" >
-        <div class="panel-heading test-heading">{{ test.title }}</div>
-        <div class="panel-body" style="display: none">
-            {% if test.children is not empty %}
-                <ul class="list-group">
+{% macro parse_test(test, index) %}
+<pre>dupa</pre>
+    <li class="list-group-item" data-remodal-target="modal-{{ index }}">
+        <p>{{ test.title }}</p>
+    </li>
+    <div class="remodal" data-remodal-id="modal-{{ index }}">
+        <button data-remodal-action="close" class="remodal-close"></button>
+        <h1>{{ test.title }}</h1>
+              {% if test.children is not empty %}
+                  <section id="cd-timeline">
                     {% for event in test.children %}
                         {% if event.type == "failure" %}
                             Failure
@@ -132,56 +165,53 @@
                             {% if loop.first %}
                                 Performed HTTP transactions
                             {% endif %}
-                            <li class="test-execution-item list-group-item">
-                                <pre style="float:left; width:75%">{{ event.request|trim }}</pre>
-                                <pre style="float:right; width:75%">{{ event.response|trim }}</pre>
-                                <div style="clear:both"></div>
-                            </li>
+
+                        <div class="cd-timeline-block">
+
+                                {{- event.request_method }} on {{ event.request_url }}.
+                                                            <pre>
+                                                                {{- event.request | escape }}
+                                                            </pre>
+                                    <pre>
+                                                                {{- event.response | escape }}
+                                                            </pre>
+                                </div>
                         {% endif %}
                     {% endfor %}
 
-                    {% if test.traffic_logger_content %}
-                        <li class="test-execution-item list-group-item">
-                            <a class="btn btn-primary" href="{{ test.traffic_logger_file }}" target="_blank">
-                                Download HAR
-                            </a>
-                            <button class="btn btn-primary showhar">Show HAR</button>
-                        </li>
-                        <li class="test-execution-item list-group-item hidden harContent">
-                            {{ test.traffic_logger_content }}
-                        </li>
-                    {% else %}
-                        {% if test.traffic_logger_file %}
-                            <li class="test-execution-item list-group-item">
-                                <a href="{{ test.traffic_logger_file }}" target="_blank">
-                                    Download HAR
-                                </a>
-                            </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
+                  </section>
+                    {#{% if test.traffic_logger_content %}#}
+                        {#<li class="test-execution-item list-group-item">#}
+                            {#<a class="btn btn-primary" href="{{ test.traffic_logger_file }}" target="_blank">#}
+                                {#Download HAR#}
+                            {#</a>#}
+                            {#<button class="btn btn-primary showhar">Show HAR</button>#}
+                        {#</li>#}
+                        {#<li class="test-execution-item list-group-item hidden harContent">#}
+                            {#{{ test.traffic_logger_content }}#}
+                        {#</li>#}
+                    {#{% else %}#}
+                        {#{% if test.traffic_logger_file %}#}
+                            {#<li class="test-execution-item list-group-item">#}
+                                {#<a href="{{ test.traffic_logger_file }}" target="_blank">#}
+                                    {#Download HAR#}
+                                {#</a>#}
+                            {#</li>#}
+                        {#{% endif %}#}
+                    {#{% endif %}#}
+                {#</ul>#}
             {% endif %}
-        </div>
-    </section>
+
+        <br>
+        <button data-remodal-action="cancel" class="remodal-cancel">Cancel</button>
+        <button data-remodal-action="confirm" class="remodal-confirm">OK</button>
 {% endmacro parse_test %}
-
-{# Find out the correct class for the current step status #}
-{% macro parse_message_class(type) %}
-{% spaceless %}
-    test-execution-item list-group-item
-
-    {% if type in ["skipped","warning","incomplete"] %}
-        list-group-item-warning
-    {% elseif type in ["error", "failure"] %}
-        list-group-item-danger
-    {% endif %}
-{% endspaceless %}
-{% endmacro parse_message_class %}
 
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-<script src="http://logo.olx.pl/images_pmaciejewski/mustache.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/remodal/1.1.1/remodal.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.3.0/mustache.min.js"></script>
 <script src="http://logo.olx.pl/images_pmaciejewski/har-viewer.js"></script>
 <link rel='stylesheet' href='http://logo.olx.pl/images_pmaciejewski/har-viewer.css'/>
 <link rel='stylesheet' href='https://code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css'/>
@@ -257,6 +287,15 @@
             header: "div.feature-heading",
             heightStyle: "content"
         });
+
+        $(window).on('scroll', function(){
+            $timeline_block.each(function(){
+                if( $(this).offset().top <= $(window).scrollTop()+$(window).height()*0.75 && $(this).find('.cd-timeline-img').hasClass('is-hidden') ) {
+                    $(this).find('.cd-timeline-img, .cd-timeline-content').removeClass('is-hidden').addClass('bounce-in');
+                }
+            });
+        });
+
     });
 </script>
 

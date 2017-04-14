@@ -336,7 +336,13 @@ class UnitReportBuilder
      */
     public function build()
     {
+        var_dump($this->pointer);
         return $this->pointer;
+    }
+
+    public function setApiVersion(string $apiVersion)
+    {
+        $this->pointer->withAttribute('api_version', $apiVersion);
     }
 }
 

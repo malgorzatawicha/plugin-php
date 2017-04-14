@@ -27,6 +27,10 @@ class ApiSubscriberBuilder extends AbstractSubscriberBuilder
                 new ProxyTrafficLogger(Athena::proxy(), new UniqueNameFileOutputStream($this->outputPathName, 'har')));
         }
 
+        if (true) { //!is_null($_ENV["ATHENA_ENV_API_VERSION"])) {
+            $subscriber->setApiVersion('test');//$_ENV["ATHENA_ENV_API_VERSION"]);
+        }
+
         return $subscriber;
     }
 }

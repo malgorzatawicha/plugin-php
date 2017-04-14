@@ -22,7 +22,7 @@ class ApiSubscriber implements EventSubscriberInterface
     private $interpreter;
 
     /**
-     * @var BddReportBuilder
+     * @var UnitReportBuilder
      */
     private $report;
 
@@ -235,6 +235,12 @@ class ApiSubscriber implements EventSubscriberInterface
         }
 
         return $httpTransactions;
+    }
+
+
+    public function setApiVersion(string $ATHENA_ENV_API_VERSION)
+    {
+        $this->report->setApiVersion($ATHENA_ENV_API_VERSION);
     }
 
     /**
