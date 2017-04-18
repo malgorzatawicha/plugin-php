@@ -11,50 +11,10 @@
             word-wrap: normal !important;
             overflow-x: scroll !important;
         }
-        #cd-timeline {
-            position: relative;
-            padding: 2em 0;
-            margin-top: 2em;
-            margin-bottom: 2em;
-        }
-        #cd-timeline::before {
-            /* this is the vertical line */
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 18px;
-            height: 100%;
-            width: 4px;
-            background: #d7e4ed;
-        }
-        .cssanimations .cd-timeline-img.is-hidden {
-            visibility: hidden;
-        }
-        .cssanimations .cd-timeline-img.bounce-in {
-            visibility: visible;
-            animation: cd-bounce-1 0.6s;
-        }
-
-        @keyframes cd-bounce-1 {
-            0% {
-                opacity: 0;
-                transform: scale(0.5);
-            }
-
-            60% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
     </style>
 </head>
 <body>
-<pre>{{  dump() }}</pre>
-<pre></pre>
+
 {% for suite in report %}
     {% import _self as rep %}
 
@@ -108,16 +68,16 @@
 </div>
 {% endfor %}
 
-
 </body>
 </html>
 
 {% macro parse_suite(suite) %}
 <div class="panel panel-default">
     <div class="panel-heading">{{ suite.title }}</div>
-    <div class="panel-body" style="display: none">sth</div>
+    <div class="panel-body">
+    </div>
     <ul class="list-group">
-    {% for test in suite.children %}
+        {% for test in suite.children %}
             {% import _self as rep %}
             {% if test.type == "child_suite" %}
                 {{ rep.parse_child_suite(test) }}
@@ -127,7 +87,7 @@
                 {{ rep.parse_test(test, loop.index) }}
             {% endif %}
 
-    {% endfor %}
+        {% endfor %}
     </ul>
 </div>
 {%  endmacro parse_suite %}
@@ -144,67 +104,71 @@
 
 {# Parse tests as sections and their exceptions as list items #}
 {% macro parse_test(test, index) %}
-<pre>dupa</pre>
     <li class="list-group-item" data-remodal-target="modal-{{ index }}">
         <p>{{ test.title }}</p>
     </li>
     <div class="remodal" data-remodal-id="modal-{{ index }}">
         <button data-remodal-action="close" class="remodal-close"></button>
         <h1>{{ test.title }}</h1>
-              {% if test.children is not empty %}
-                  <section id="cd-timeline">
-                    {% for event in test.children %}
-                        {% if event.type == "failure" %}
-                            Failure
-                            {% import _self as rep %}
-                            <li class="{{ rep.parse_message_class(event.type) }}" title="{{ event.type }}">
-                                <pre>{{ "#{event.exception_type}\n\n#{event.exception_msg}" }}</pre>
-                                <pre>{{ event.exception_trace }}</pre>
-                            </li>
-                        {% elseif event.type == "http_transaction" %}
-                            {% if loop.first %}
-                                Performed HTTP transactions
-                            {% endif %}
-
-                        <div class="cd-timeline-block">
-
-                                {{- event.request_method }} on {{ event.request_url }}.
-                                                            <pre>
-                                                                {{- event.request | escape }}
-                                                            </pre>
-                                    <pre>
-                                                                {{- event.response | escape }}
-                                                            </pre>
+        {% if test.children is not empty %}
+            <div>
+                {% for event in test.children %}
+                    {% if event.type == "failure" %}
+                        Failure
+                        {% import _self as rep %}
+                        <li class="{{ rep.parse_message_class(event.type) }}" title="{{ event.type }}">
+                            <pre>{{ "#{event.exception_type}\n\n#{event.exception_msg}" }}</pre>
+                            <pre>{{ event.exception_trace }}</pre>
+                        </li>
+                    {% elseif event.type == "http_transaction" %}
+                        {% if loop.first %}
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">Performed HTTP transactions</h3>
                                 </div>
+                            </div>
                         {% endif %}
-                    {% endfor %}
 
-                  </section>
-                    {#{% if test.traffic_logger_content %}#}
-                        {#<li class="test-execution-item list-group-item">#}
-                            {#<a class="btn btn-primary" href="{{ test.traffic_logger_file }}" target="_blank">#}
-                                {#Download HAR#}
-                            {#</a>#}
-                            {#<button class="btn btn-primary showhar">Show HAR</button>#}
-                        {#</li>#}
-                        {#<li class="test-execution-item list-group-item hidden harContent">#}
-                            {#{{ test.traffic_logger_content }}#}
-                        {#</li>#}
-                    {#{% else %}#}
-                        {#{% if test.traffic_logger_file %}#}
-                            {#<li class="test-execution-item list-group-item">#}
-                                {#<a href="{{ test.traffic_logger_file }}" target="_blank">#}
-                                    {#Download HAR#}
-                                {#</a>#}
-                            {#</li>#}
-                        {#{% endif %}#}
-                    {#{% endif %}#}
-                {#</ul>#}
+                        {%  if loop.last %}
+
+                        {% endif %}
+                        <div class="panel panel-default">
+                            <div class="panel-heading">{{- event.request_method }} on {{ event.request_url }}.</div>
+                        </div>
+                        <div align="left">
+                                <pre> <code class="http">
+                                        {{- event.request | escape }}
+                                </code> </pre>
+                                <pre> <code class="http">
+                                        {{- event.response | escape }}
+                                </code></pre>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <br>
+            {% if test.traffic_logger_content %}
+                    <a class="remodal-confirm" href="{{ test.traffic_logger_file }}" target="_blank">
+                        Download HAR
+                    </a>
+                    <button class="remodal-confirm showhar">Show HAR</button>
+                <button class="test-execution-item list-group-item hidden harContent">
+                    {{ test.traffic_logger_content }}
+                </button>
+            {% else %}
+                {% if test.traffic_logger_file %}
+                        <a href="{{ test.traffic_logger_file }}" target="_blank">
+                            Download HAR
+                        </a>
+                {% endif %}
             {% endif %}
+        {% endif %}
 
-        <br>
-        <button data-remodal-action="cancel" class="remodal-cancel">Cancel</button>
-        <button data-remodal-action="confirm" class="remodal-confirm">OK</button>
+        <button data-remodal-action="cancel" class="remodal-cancel">
+            Close
+        </button>
+    </div>
 {% endmacro parse_test %}
 
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
@@ -213,6 +177,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/remodal/1.1.1/remodal.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.3.0/mustache.min.js"></script>
 <script src="http://logo.olx.pl/images_pmaciejewski/har-viewer.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/default.min.css">
 <link rel='stylesheet' href='http://logo.olx.pl/images_pmaciejewski/har-viewer.css'/>
 <link rel='stylesheet' href='https://code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css'/>
 
@@ -239,13 +205,6 @@
             $(this).hide();
             e.preventDefault();
         });
-
-        $(".test-execution-item-action").each(function () {
-            this.innerHTML = this.innerHTML.replace(/https?:\/\/[^ ]+/, function (match) {
-                return "<a href=\"" + match + "\" target=\"_blank\">" + match + "</a>"
-            })
-        });
-
 
         $(".feature-toggle").click(function(){
             var $this   = $(this);
@@ -274,42 +233,25 @@
             });
         });
 
-        $(".accordion-test").accordion({
-            active: 1,
-            collapsible: true,
-            header: "div.test-heading",
-            heightStyle: "content"
-        });
-
-        $(".accordion-feature").accordion({
-            active: 1,
-            collapsible: true,
-            header: "div.feature-heading",
-            heightStyle: "content"
-        });
-
-        $(window).on('scroll', function(){
-            $timeline_block.each(function(){
-                if( $(this).offset().top <= $(window).scrollTop()+$(window).height()*0.75 && $(this).find('.cd-timeline-img').hasClass('is-hidden') ) {
-                    $(this).find('.cd-timeline-img, .cd-timeline-content').removeClass('is-hidden').addClass('bounce-in');
-                }
+        $(document).ready(function() {
+            $('pre code').each(function(i, block) {
+                hljs.highlightBlock(block);
             });
         });
-
     });
 </script>
 
-<!-- Modal -->
-<div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">Details</h4>
-            </div>
-            <div class="modal-body" id="modal-body" style="max-height: 100%">
-            </div>
+<div class="modal fade" id="modal" tabindex="1" role="dialog" arialabelledby="myModalLabel">
+        <div class="modaldialog modallg" role="document">
+                <div class="modalcontent">
+                        <div class="modalheader">
+                                <button type="button" class="close" datadismiss="modal" arialabel="Close"><span
+                                                        ariahidden="true">&times;</span></button>
+                                <h4 class="modaltitle" id="myModalLabel">Details</h4>
+                        </div>
+                        <div class="modalbody" id="modalbody" style="maxheight: 100%">
+
+                        </div>
+                </div>
         </div>
-    </div>
 </div>
