@@ -11,10 +11,29 @@
             word-wrap: normal !important;
             overflow-x: scroll !important;
         }
+        @media only screen and (min-width: 641px) {
+            .remodal {
+                max-width: 90%;
+            }
+        }
+        li.list-group-item {
+            cursor: pointer
+        }
+        .hidden {
+             display: none;
+         }
+        .success {
+            background-color: #5cb85c;
+        }
+        .failure {
+            background-color: #d9534f;
+        }
+        p {
+            margin: 0 0 0;
+        }
     </style>
 </head>
 <body>
-
 {% for suite in report %}
     {% import _self as rep %}
 
@@ -104,8 +123,24 @@
 
 {# Parse tests as sections and their exceptions as list items #}
 {% macro parse_test(test, index) %}
-    <li class="list-group-item" data-remodal-target="modal-{{ index }}">
-        <p>{{ test.title }}</p>
+    {% if test.successful %}
+        {% set bgClass = "success" %}
+    {% else %}
+        {% set bgClass = "failure" %}
+    {% endif %}
+
+    <li class="list-group-item {{ bgClass }}" data-remodal-target="modal-{{ index }}">
+        <p>
+            {% if test.successful %}
+                <span class="glyphicon glyphicon-ok-sign"></span>
+            {% else %}
+                <span class="glyphicon glyphicon-remove-sign"></span>
+            {% endif %}
+            {% if test.children is not empty %}
+                <span class="glyphicon glyphicon-info-sign"></span>
+            {% endif %}
+            {{ test.title }}
+        </p>
     </li>
     <div class="remodal" data-remodal-id="modal-{{ index }}">
         <button data-remodal-action="close" class="remodal-close"></button>
@@ -114,12 +149,19 @@
             <div>
                 {% for event in test.children %}
                     {% if event.type == "failure" %}
-                        Failure
                         {% import _self as rep %}
-                        <li class="{{ rep.parse_message_class(event.type) }}" title="{{ event.type }}">
-                            <pre>{{ "#{event.exception_type}\n\n#{event.exception_msg}" }}</pre>
-                            <pre>{{ event.exception_trace }}</pre>
-                        </li>
+                        <div class="panel panel-danger">
+                            <div class="toggle-request-body panel-heading failure">
+                                <h3 class="panel-title">{{ event.exception_type }}</h3>
+                            </div>
+                            <div align="left" class="request hidden">
+                                <pre>
+                                    {{ event.exception_msg }}
+                                    &nbsp;
+                                    {{ event.exception_trace }}
+                                </pre>
+                            </div>
+                        </div>
                     {% elseif event.type == "http_transaction" %}
                         {% if loop.first %}
                             <div class="panel panel-default">
@@ -133,15 +175,23 @@
 
                         {% endif %}
                         <div class="panel panel-default">
-                            <div class="panel-heading">{{- event.request_method }} on {{ event.request_url }}.</div>
-                        </div>
-                        <div align="left">
-                                <pre> <code class="http">
+                            <div align="left" class="toggle-request-body panel-heading">
+                                <span class="glyphicon glyphicon-plus"></span>
+                                &nbsp;
+                                {{- event.request_method }} on {{ event.request_url }}.
+                            </div>
+                            <div align="left" class="request hidden">
+                                <pre>
+                                    <code class="http">
                                         {{- event.request | escape }}
-                                </code> </pre>
-                                <pre> <code class="http">
+                                    </code>
+                                </pre>
+                                <pre>
+                                    <code class="http">
                                         {{- event.response | escape }}
-                                </code></pre>
+                                    </code>
+                                </pre>
+                            </div>
                         </div>
                     {% endif %}
                 {% endfor %}
@@ -200,11 +250,6 @@
             var har = content.data('HarView');
             har.render(data);
         });
-        $(".show-expected-exception").on("click", function (e) {
-            $(this).siblings(".expected-exception-stacktrace").show();
-            $(this).hide();
-            e.preventDefault();
-        });
 
         $(".feature-toggle").click(function(){
             var $this   = $(this);
@@ -219,18 +264,19 @@
             });
         });
 
-        $(".toggle-children").click(function(event){
+        $(".toggle-request-body").click(function(event){
             event.stopPropagation();
             var $button = $(this);
-            var $target = $(this).parent().nextUntil('.step-item');
+            var $target = $(this).next('.request');
+            $button.children('span').toggleClass('glyphicon-minus');
+            $button.children('span').toggleClass('glyphicon-plus');
+            if ($target.is(':visible')) {
+                $target.addClass('hidden', function () {
 
-            $target.toggleClass("hidden", function(){
-                if ($target.is(':visible')) {
-                    $button.html('<span class="glyphicon glyphicon-minus"></span>');
-                } else {
-                    $button.html('<span class="glyphicon glyphicon-plus"></span>');
-                }
-            });
+                });
+            } else {
+                $target.removeClass('hidden');
+            }
         });
 
         $(document).ready(function() {
