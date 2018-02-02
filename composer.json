@@ -7,7 +7,7 @@
     "athena-oss/php-fluent-http-client" : "0.8.2",
     "athena-oss/php-fluent-webdriver-client" : "0.7.2",
     "facebook/webdriver": "1.1.1",
-    "phpunit/phpunit": "5.1.7",
+    "phpunit/phpunit": "5.3.5",
     "phpmd/phpmd": "2.4.3",
     "guzzlehttp/guzzle": "^6.0",
     "phake/phake": "2.2.1",
